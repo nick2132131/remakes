@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Executors — KRNL & Synapse X</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080809;
+    --bg2: #0e0e10;
+    --bg3: #141417;
+    --line: rgba(255,255,255,0.06);
+    --line-bright: rgba(255,255,255,0.12);
+    --text: #e8e8ec;
+    --muted: #6b6b78;
+    --krnl: #00e5ff;
+    --krnl-dim: rgba(0, 229, 255, 0.08);
+    --krnl-glow: rgba(0, 229, 255, 0.25);
+    --syn: #ff4d6d;
+    --syn-dim: rgba(255, 77, 109, 0.08);
+    --syn-glow: rgba(255, 77, 109, 0.25);
+    --white: #ffffff;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Grid texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Noise grain */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 48px;
+    background: rgba(8, 8, 9, 0.72);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .nav-logo {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-logo span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--krnl);
+    display: inline-block;
+    box-shadow: 0 0 8px var(--krnl);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 36px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--text); }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 120px 24px 80px;
+    overflow: hidden;
+  }
+
+  /* Radial glow behind hero */
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 900px;
+    height: 500px;
+    background: radial-gradient(ellipse, rgba(0,229,255,0.05) 0%, transparent 65%),
+                radial-gradient(ellipse at 70% 50%, rgba(255,77,109,0.05) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hero-eyebrow::before,
+  .hero-eyebrow::after {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 1px;
+    background: var(--line-bright);
+  }
+
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(52px, 8vw, 100px);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    margin-bottom: 32px;
+    color: var(--white);
+  }
+
+  .hero-title .word-krnl { color: var(--krnl); }
+  .hero-title .word-syn  { color: var(--syn); }
+
+  .hero-title .amp {
+    color: var(--muted);
+    font-weight: 400;
+    padding: 0 0.1em;
+  }
+
+  .hero-sub {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--muted);
+    max-width: 480px;
+    line-height: 1.8;
+    margin-bottom: 52px;
+  }
+
+  .hero-ctas {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    border-radius: 3px;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-krnl {
+    background: var(--krnl-dim);
+    color: var(--krnl);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+  }
+
+  .btn-krnl:hover {
+    background: rgba(0, 229, 255, 0.14);
+    box-shadow: 0 0 24px var(--krnl-glow);
+  }
+
+  .btn-syn {
+    background: var(--syn-dim);
+    color: var(--syn);
+    border: 1px solid rgba(255, 77, 109, 0.2);
+  }
+
+  .btn-syn:hover {
+    background: rgba(255, 77, 109, 0.14);
+    box-shadow: 0 0 24px var(--syn-glow);
+  }
+
+  .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* Stats bar */
+  .hero-stats {
+    position: absolute;
+    bottom: 40px;
+    left: 0; right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 56px;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.02em;
+  }
+
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ── SECTION SHARED ── */
+  section {
+    position: relative;
+    z-index: 1;
+  }
+
+  .section-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 48px;
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-label::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--line-bright);
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--white);
+    line-height: 1.1;
+    margin-bottom: 56px;
+  }
+
+  /* ── DOWNLOAD CARDS ── */
+  .downloads {
+    padding: 100px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+
+  .card {
+    background: var(--bg);
+    padding: 48px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .card:hover { background: var(--bg2); }
+
+  .card-krnl::before { background: var(--krnl); }
+  .card-syn::before  { background: var(--syn); }
+  .card:hover::before { opacity: 1; }
+
+  /* Corner accent */
+  .card-krnl::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; right: -60px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: var(--krnl-dim);
+    pointer-events: none;
+  }
+
+  .card-syn::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; right: -60px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: var(--syn-dim);
+    pointer-events: none;
+  }
+
+  .card-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 2px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 28px;
+  }
+
+  .card-krnl .card-badge {
+    background: var(--krnl-dim);
+    color: var(--krnl);
+    border: 1px solid rgba(0,229,255,0.15);
+  }
+
+  .card-syn .card-badge {
+    background: var(--syn-dim);
+    color: var(--syn);
+    border: 1px solid rgba(255,77,109,0.15);
+  }
+
+  .card-badge-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .card-name {
+    font-family: var(--font-display);
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 12px;
+    color: var(--white);
+  }
+
+  .card-version {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+
+  .card-desc {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.8;
+    margin-bottom: 36px;
+    max-width: 360px;
+  }
+
+  .card-features {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 40px;
+  }
+
+  .card-features li {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-features li::before {
+    content: '';
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .card-krnl .card-features li::before { background: var(--krnl); }
+  .card-syn  .card-features li::before { background: var(--syn); }
+
+  .card-dl {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 24px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+
+  .card-krnl .card-dl {
+    background: var(--krnl-dim);
+    color: var(--krnl);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+  }
+
+  .card-krnl .card-dl:hover {
+    background: rgba(0, 229, 255, 0.14);
+    box-shadow: 0 0 28px var(--krnl-glow);
+    transform: translateY(-1px);
+  }
+
+  .card-syn .card-dl {
+    background: var(--syn-dim);
+    color: var(--syn);
+    border: 1px solid rgba(255, 77, 109, 0.2);
+  }
+
+  .card-syn .card-dl:hover {
+    background: rgba(255, 77, 109, 0.14);
+    box-shadow: 0 0 28px var(--syn-glow);
+    transform: translateY(-1px);
+  }
+
+  .card-dl svg { width: 14px; height: 14px; }
+
+  /* ── FEATURES ── */
+  .features {
+    padding: 100px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+
+  .feature {
+    background: var(--bg);
+    padding: 36px;
+    transition: background 0.25s;
+  }
+
+  .feature:hover { background: var(--bg2); }
+
+  .feature-icon {
+    width: 36px; height: 36px;
+    margin-bottom: 20px;
+    opacity: 0.8;
+  }
+
+  .feature-title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--white);
+    margin-bottom: 10px;
+  }
+
+  .feature-desc {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  /* ── SETUP STEPS ── */
+  .setup {
+    padding: 100px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+
+  .step {
+    background: var(--bg);
+    padding: 32px 40px;
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 28px;
+    align-items: start;
+    transition: background 0.2s;
+  }
+
+  .step:hover { background: var(--bg2); }
+
+  .step-num {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .step-content { flex: 1; }
+
+  .step-title {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .step-desc {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .step-desc code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 2px 7px;
+    background: var(--bg3);
+    border: 1px solid var(--line-bright);
+    border-radius: 2px;
+    color: var(--text);
+  }
+
+  /* ── FAQ ── */
+  .faq {
+    padding: 100px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+
+  .faq-item {
+    background: var(--bg);
+    overflow: hidden;
+  }
+
+  .faq-q {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 28px 40px;
+    text-align: left;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--white);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    letter-spacing: -0.01em;
+    transition: background 0.2s;
+  }
+
+  .faq-q:hover { background: var(--bg2); }
+
+  .faq-q svg {
+    width: 16px; height: 16px;
+    color: var(--muted);
+    flex-shrink: 0;
+    transition: transform 0.25s;
+  }
+
+  .faq-item.open .faq-q svg { transform: rotate(45deg); }
+
+  .faq-a {
+    display: none;
+    padding: 0 40px 28px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.8;
+    border-top: 1px solid var(--line);
+  }
+
+  .faq-item.open .faq-a { display: block; }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--line);
+    padding: 40px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-left {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .footer-right {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── SCROLL ANIMATIONS ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav { padding: 16px 24px; }
+    .nav-links { display: none; }
+    .section-inner { padding: 0 24px; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .features-grid { grid-template-columns: 1fr; }
+    .hero-stats { gap: 28px; }
+    footer { flex-direction: column; gap: 12px; text-align: center; }
+    .step { grid-template-columns: 36px 1fr; gap: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">
+    <span></span>
+    executors.dev
+  </a>
+  <ul class="nav-links">
+    <li><a href="#download">Download</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#setup">Setup</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">Roblox Script Execution</div>
+  <h1 class="hero-title">
+    <span class="word-krnl">KRNL</span>
+    <span class="amp"> & </span>
+    <span class="word-syn">Synapse X</span>
+  </h1>
+  <p class="hero-sub">
+    Custom-built executor remakes. Monaco editor, QuorumAPI injection, Discord RPC. Open source.
+  </p>
+  <div class="hero-ctas">
+    <a href="#download" class="btn btn-krnl">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download KRNL
+    </a>
+    <a href="#download" class="btn btn-syn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download Synapse X
+    </a>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat">
+      <span class="stat-value">v1.0</span>
+      <span class="stat-label">Version</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">x64</span>
+      <span class="stat-label">Architecture</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">.NET 8</span>
+      <span class="stat-label">Runtime</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">Win10+</span>
+      <span class="stat-label">Platform</span>
+    </div>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section class="downloads" id="download">
+  <div class="section-inner">
+    <p class="section-label reveal">Releases</p>
+    <h2 class="section-title reveal">Pick your executor.</h2>
+
+    <div class="cards-grid reveal">
+      <!-- KRNL -->
+      <div class="card card-krnl">
+        <div class="card-badge">
+          <span class="card-badge-dot"></span>
+          stable
+        </div>
+        <div class="card-name">KRNL</div>
+        <div class="card-version">v1.0.0 — WinForms + WebView2</div>
+        <p class="card-desc">
+          Lightweight executor built on Windows Forms. WebView2-powered Monaco editor, Discord RPC, ScriptBlox integration.
+        </p>
+        <ul class="card-features">
+          <li>QuorumAPI injection engine</li>
+          <li>Monaco editor with Lua intellisense</li>
+          <li>Discord Rich Presence</li>
+          <li>Script Hub via ScriptBlox</li>
+          <li>Auto-attach on Roblox launch</li>
+        </ul>
+        <a href="https://github.com/YOUR_USER/krnl/releases/latest/download/KRNL.exe" class="card-dl" id="krnl-dl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download KRNL.exe
+        </a>
+      </div>
+
+      <!-- SYNAPSE -->
+      <div class="card card-syn">
+        <div class="card-badge">
+          <span class="card-badge-dot"></span>
+          stable
+        </div>
+        <div class="card-name">Synapse X</div>
+        <div class="card-version">v1.0.0 — WPF + CefSharp</div>
+        <p class="card-desc">
+          Full-featured WPF remake. CefSharp Monaco editor, theme support, Discord RPC, and the complete original UI layout.
+        </p>
+        <ul class="card-features">
+          <li>QuorumAPI injection engine</li>
+          <li>CefSharp Monaco editor</li>
+          <li>Original Synapse UI preserved</li>
+          <li>Discord Rich Presence</li>
+          <li>Script Hub via ScriptBlox</li>
+        </ul>
+        <a href="https://github.com/YOUR_USER/synapse/releases/latest/download/SynapseX.exe" class="card-dl" id="syn-dl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download SynapseX.exe
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="section-inner">
+    <p class="section-label reveal">What's inside</p>
+    <h2 class="section-title reveal">Built different.</h2>
+
+    <div class="features-grid reveal">
+      <div class="feature">
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="var(--krnl)" stroke-width="1.5">
+          <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+        </svg>
+        <div class="feature-title">Monaco Editor</div>
+        <p class="feature-desc">Full VS Code editor engine with Lua syntax highlighting, autocompletion, and 200+ intellisense entries for Roblox + Synapse APIs.</p>
+      </div>
+      <div class="feature">
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="var(--syn)" stroke-width="1.5">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+        <div class="feature-title">QuorumAPI Injection</div>
+        <p class="feature-desc">Powered by QuorumAPI for reliable injection. Auto-attach detects Roblox launch automatically. Executor spoof built in.</p>
+      </div>
+      <div class="feature">
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="var(--krnl)" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/><path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85m19.5 1.9c-3.5-.93-6.63-.82-8.94 0-2.58.92-5.01 2.86-7.44 6.32"/>
+        </svg>
+        <div class="feature-title">Discord RPC</div>
+        <p class="feature-desc">Real-time Discord Rich Presence. Shows idle, injected, and executing states with your custom app icon and timestamps.</p>
+      </div>
+      <div class="feature">
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="var(--syn)" stroke-width="1.5">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <div class="feature-title">Script Hub</div>
+        <p class="feature-desc">200+ free scripts fetched live from ScriptBlox. Browse by name, see thumbnails and descriptions, execute in one click.</p>
+      </div>
+      <div class="feature">
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="var(--krnl)" stroke-width="1.5">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <div class="feature-title">Admin Manifest</div>
+        <p class="feature-desc">Ships with a UAC manifest requiring administrator. No manual elevation needed — Windows prompts automatically on launch.</p>
+      </div>
+      <div class="feature">
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="var(--syn)" stroke-width="1.5">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        </svg>
+        <div class="feature-title">Open Source</div>
+        <p class="feature-desc">Full source code on GitHub. Build it yourself, modify the UI, add features. No obfuscated binaries, no surprises.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SETUP -->
+<section class="setup" id="setup">
+  <div class="section-inner">
+    <p class="section-label reveal">Getting started</p>
+    <h2 class="section-title reveal">Setup in 4 steps.</h2>
+
+    <div class="steps reveal">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-content">
+          <div class="step-title">Download the .exe</div>
+          <p class="step-desc">Click the download button above. Save the file anywhere — Desktop works fine. Windows may show a SmartScreen warning because the binary isn't signed yet. Click <code>More info → Run anyway</code>.</p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-content">
+          <div class="step-title">Run as Administrator</div>
+          <p class="step-desc">The app requests admin automatically via its UAC manifest. Accept the prompt. QuorumAPI needs elevated privileges to inject into Roblox.</p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">03</span>
+        <div class="step-content">
+          <div class="step-title">Open Roblox first</div>
+          <p class="step-desc">Launch Roblox and join any game. Wait until you're fully in-game before attaching. The executor detects <code>RobloxPlayerBeta.exe</code> automatically.</p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">04</span>
+        <div class="step-content">
+          <div class="step-title">Attach and execute</div>
+          <p class="step-desc">Click <code>Attach</code>. Wait for the "Attached" status. Paste or write your script in the editor, then hit <code>Execute</code>. That's it.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq" id="faq">
+  <div class="section-inner">
+    <p class="section-label reveal">Common questions</p>
+    <h2 class="section-title reveal">FAQ</h2>
+
+    <div class="faq-list reveal">
+      <div class="faq-item">
+        <button class="faq-q">
+          Why is my antivirus flagging the exe?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <div class="faq-a">Executors interact with Roblox's memory and process space — this behaviour triggers heuristic detection in most antivirus software even when the code is clean. Add the folder to your AV exclusions, or build the project from source yourself to verify there's nothing malicious.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">
+          Which executor should I use?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <div class="faq-a">KRNL is lighter, WinForms-based, and starts up faster. Synapse X is the heavier WPF remake with the classic UI layout. Both use the same injection engine so script compatibility is identical.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">
+          It says "Roblox not found" when I click Attach
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <div class="faq-a">Make sure you're in an actual game, not just the Roblox launcher or home page. The executor looks for the RobloxPlayerBeta process which only exists once a game is running.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">
+          The Monaco editor shows "ERR_FILE_NOT_FOUND"
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <div class="faq-a">The bin/Monaco.html file is missing. Make sure the bin folder from the release zip is placed in the same directory as the .exe. The editor HTML file must be at [exe folder]/bin/Monaco.html.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">
+          Do I need .NET 8 installed?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <div class="faq-a">Yes. Download the .NET 8 Desktop Runtime from microsoft.com/dotnet. The x64 version is required. Windows 10 and 11 are supported.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">
+    Built with QuorumAPI, CefSharp, Monaco Editor
+  </div>
+  <div class="footer-right">
+    For educational purposes only
+  </div>
+</footer>
+
+<script>
+  // FAQ toggle
+  document.querySelectorAll('.faq-q').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.faq-item');
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+
+  // Scroll reveal
+  const io = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 80);
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+</script>
+</body>
+</html>

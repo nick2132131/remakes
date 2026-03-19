@@ -1,0 +1,70 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWpf>true</UseWpf>
+
+    <!-- Fixes CS0579: stops SDK auto-generating attributes that clash with AssemblyInfo.cs -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+
+    <!-- Fixes CS8625/CS8618/CS8622/CS8629/CS8765/CS8767: turns off nullable enforcement -->
+    <Nullable>disable</Nullable>
+
+    <!-- Disable implicit usings so nothing unexpected is injected -->
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <!-- Required for P/Invoke in CInterface -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- CefSharp requires x86 or x64, not AnyCPU -->
+    <PlatformTarget>x86</PlatformTarget>
+
+    <!-- Suppress NU1701 (CefSharp framework compatibility) and leftover nullable warnings -->
+    <NoWarn>NU1701;CS8600;CS8601;CS8602;CS8603;CS8604;CS8612</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- CefSharp: use NuGet package ONLY. Remove any old source/packages folders from project. -->
+
+    <!-- JSON -->
+    <PackageReference Include="CefSharp.Common" Version="145.0.260" />
+    <PackageReference Include="CefSharp.OffScreen" Version="145.0.260" />
+    <PackageReference Include="CefSharp.Wpf" Version="145.0.260" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+
+    <!-- WMI / ProcessWatcher / Process.cs -->
+    <PackageReference Include="System.Management" Version="8.0.0" />
+
+    <!-- DiscordInterface (uses RestSharp 106-style API) -->
+    <PackageReference Include="RestSharp" Version="106.15.0" />
+
+    <!-- DiscordInterface SQLite local storage -->
+    <PackageReference Include="System.Data.SQLite" Version="2.0.3" />
+
+    <!-- WebSocketInterface -->
+    <PackageReference Include="WebSocketSharp-netstandard" Version="1.0.1" />
+
+    <!-- WCF types used by CefSharp internals -->
+    <PackageReference Include="System.ServiceModel.Http" Version="4.10.3" />
+    <PackageReference Include="System.ServiceModel.Primitives" Version="4.10.3" />
+
+    <!-- ThemeInterface uses System.Drawing.Image -->
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+
+    <!-- SecurityInterface uses dnlib -->
+    <PackageReference Include="dnlib" Version="4.4.0" />
+  </ItemGroup>
+
+  <!--
+    CRITICAL: Exclude the old CefSharp 73 source files that were shipped inside the
+    'packages' folder. These conflict with the NuGet package above and cause every
+    CS0436 / CS0103 / CS0246 error you see.
+    Adjust the path below if your packages folder is named differently.
+  -->
+  <ItemGroup>
+    <Compile Remove="packages\**\*.cs" />
+    <Compile Remove="packages\**" />
+  </ItemGroup>
+
+</Project>

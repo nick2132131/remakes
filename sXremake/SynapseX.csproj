@@ -1,0 +1,63 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWpf>true</UseWpf>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<Nullable>disable</Nullable>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<!-- x64 to match QuorumAPI — NO RuntimeIdentifier, it causes build skipping -->
+		<PlatformTarget>x64</PlatformTarget>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<NoWarn>NU1701;CA1416;CA1418;SYSLIB0011;SYSLIB0014;CS0618;CS0436;CS0067</NoWarn>
+		<Platforms>x64</Platforms>
+		<ApplicationIcon>sxlogosmallwhite_OJJ_icon.ico</ApplicationIcon>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="CefSharp.Common" Version="145.0.260" />
+		<PackageReference Include="CefSharp.Wpf" Version="145.0.260" />
+		<PackageReference Include="CefSharp.OffScreen" Version="145.0.260" />
+		<PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="System.Management" Version="8.0.0" />
+		<PackageReference Include="RestSharp" Version="106.15.0" />
+		<PackageReference Include="System.Data.SQLite" Version="1.0.118.0" />
+		<PackageReference Include="WebSocketSharp-netstandard" Version="1.0.1" />
+		<PackageReference Include="System.ServiceModel.Http" Version="4.10.3" />
+		<PackageReference Include="System.ServiceModel.Primitives" Version="4.10.3" />
+		<PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+		<PackageReference Include="dnlib" Version="4.4.0" />
+	</ItemGroup>
+
+	<!-- QuorumAPI.dll — place in project root folder -->
+	<ItemGroup>
+		<Reference Include="QuorumAPI">
+			<HintPath>QuorumAPI.dll</HintPath>
+			<Private>true</Private>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Remove="packages\**" />
+		<None Remove="packages\**" />
+		<EmbeddedResource Remove="packages\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Include="sxlogosmallwhite_OJJ_icon.ico" />
+	</ItemGroup>
+
+	<!-- Copy CefSharp managed DLLs to output after build -->
+	<Target Name="CopyCefSharpManagedDlls" AfterTargets="Build">
+		<ItemGroup>
+			<CefManaged Include="$(NuGetPackageRoot)cefsharp.common\145.0.260\lib\**\CefSharp.dll" />
+			<CefManaged Include="$(NuGetPackageRoot)cefsharp.wpf\145.0.260\lib\**\CefSharp.Wpf.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(CefManaged)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" ContinueOnError="true" />
+	</Target>
+
+</Project>

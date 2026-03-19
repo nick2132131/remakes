@@ -1,0 +1,80 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    
+    <!-- Force x64 platform (required for Quorum API) -->
+    <PlatformTarget>x64</PlatformTarget>
+    <Platforms>x64</Platforms>
+    
+    <!-- Include application manifest for administrator privileges -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    
+    <!-- Suppress WindowsBase warning -->
+    <NoWarn>$(NoWarn);MSB3277</NoWarn>
+  </PropertyGroup>
+
+  <!-- x64 Configuration -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3856.49" />
+  </ItemGroup>
+
+  <!-- Reference QuorumAPI.dll from PROJECT ROOT -->
+  <ItemGroup>
+    <Reference Include="QuorumAPI">
+      <HintPath>QuorumAPI.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- Copy QuorumAPI.dll to output -->
+  <ItemGroup>
+    <None Update="QuorumAPI.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- Copy bin folder (Quorum dependencies) to output -->
+  <Target Name="CopyQuorumBinFolder" AfterTargets="Build">
+    <ItemGroup>
+      <QuorumBinFiles Include="bin\**\*.*" Exclude="bin\Debug\**\*.*;bin\Release\**\*.*;bin\x64\**\*.*" />
+    </ItemGroup>
+    <Copy 
+      SourceFiles="@(QuorumBinFiles)" 
+      DestinationFolder="$(OutputPath)\bin\%(RecursiveDir)" 
+      SkipUnchangedFiles="true" 
+      Condition="Exists('bin') AND '@(QuorumBinFiles)' != ''" />
+  </Target>
+
+</Project>
